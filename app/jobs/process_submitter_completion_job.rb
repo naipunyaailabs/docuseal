@@ -90,7 +90,8 @@ class ProcessSubmitterCompletionJob
     user = submission.created_by_user || submitter.template.author
 
     if submitter.account.users.exists?(id: user.id) && submission.preferences['send_email'] != false &&
-       submitter.template&.preferences&.dig('completed_notification_email_enabled') != false
+       submitter.template&.preferences&.dig('completed_notification_email_enabled') != false &&
+       user.role == 'admin'
       if submission.submitters.map(&:email).exclude?(user.email) &&
          user.user_configs.find_by(key: UserConfig::RECEIVE_COMPLETED_EMAIL)&.value != false &&
          user.role != 'integration'
@@ -98,13 +99,16 @@ class ProcessSubmitterCompletionJob
       end
 
       build_bcc_addresses(submission).each do |to|
-        SubmitterMailer.completed_email(submitter, user, to:).deliver_later!
+        # Only send to admins
+        admin_user = submitter.account.users.find_by(email: to, role: 'admin')
+        SubmitterMailer.completed_email(submitter, user, to:).deliver_later! if admin_user
       end
     end
 
     maybe_enqueue_copy_emails(submitter)
   end
 
+  # Only send document copy emails to admin users
   def maybe_enqueue_copy_emails(submitter)
     return if submitter.template&.preferences&.dig('documents_copy_email_enabled') == false
 
@@ -116,12 +120,14 @@ class ProcessSubmitterCompletionJob
     to = submitter.submission.submitters.reject { |e| e.preferences['send_email'] == false }
                   .sort_by(&:completed_at).select(&:email?).map(&:friendly_name)
 
-    return if to.blank?
+    # Filter to admin users only
+    admin_emails = to & submitter.account.users.where(role: 'admin').pluck(:email)
+    return if admin_emails.blank?
 
     if configs.value['bcc_recipients'] == true
-      to.each { |to| SubmitterMailer.documents_copy_email(submitter, to:).deliver_later! }
+      admin_emails.each { |to| SubmitterMailer.documents_copy_email(submitter, to:).deliver_later! }
     else
-      SubmitterMailer.documents_copy_email(submitter, to: to.join(', ')).deliver_later!
+      SubmitterMailer.documents_copy_email(submitter, to: admin_emails.join(', ')).deliver_later!
     end
   end
 
