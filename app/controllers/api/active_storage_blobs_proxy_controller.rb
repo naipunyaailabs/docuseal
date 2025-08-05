@@ -4,9 +4,7 @@ module Api
   class ActiveStorageBlobsProxyController < ApiBaseController
     include ActiveStorage::Streaming
 
-    skip_before_action :authenticate_user!
-    skip_authorization_check
-
+    before_action :authenticate_user!
     before_action :set_cors_headers
     before_action :set_noindex_headers
 
@@ -42,16 +40,10 @@ module Api
     private
 
     def authorization_check!(attachment)
-      is_authorized = attachment.name.in?(%w[logo preview_images]) ||
-                      (current_user && attachment.record.account.id == current_user.account_id) ||
-                      (current_user && !Docuseal.multitenant? && current_user.role == 'superadmin') ||
-                      !attachment.record.account.account_configs
-                                 .find_or_initialize_by(key: AccountConfig::DOWNLOAD_LINKS_AUTH_KEY).value
-
+      is_authorized = current_user && current_user.role == User::ADMIN_ROLE
       return if is_authorized
 
-      Rollbar.error('Blob aunauthorized') if defined?(Rollbar)
-
+      Rollbar.error('Blob unauthorized') if defined?(Rollbar)
       raise CanCan::AccessDenied
     end
   end

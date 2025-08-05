@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class SubmissionsDownloadController < ApplicationController
-  skip_before_action :authenticate_user!
-  skip_authorization_check
+  before_action :authenticate_user!
+  before_action :require_admin!
 
   TTL = 40.minutes
   FILES_TTL = 5.minutes
@@ -50,6 +50,12 @@ class SubmissionsDownloadController < ApplicationController
 
   def current_user_submitter?(submitter)
     current_user && current_user.account.submitters.exists?(id: submitter.id)
+  end
+
+  def require_admin!
+    unless current_user&.role == User::ADMIN_ROLE
+      head :forbidden
+    end
   end
 
   def build_urls(submitter)
