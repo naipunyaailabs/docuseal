@@ -136,7 +136,7 @@ RSpec.describe 'Signing Form' do
       click_on 'Complete'
 
       expect(page).to have_button('Download')
-      expect(page).to have_content('Document has been signed!')
+      expect(page).to have_content('Form has been completed!')
 
       submitter = template.submissions.last.submitters.last
 

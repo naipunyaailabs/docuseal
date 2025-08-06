@@ -33,36 +33,6 @@
           {{ completedButton.title || 'Back to Website' }}
         </span>
       </a>
-      <button
-        v-if="canSendEmail && !isDemo && withSendCopyButton"
-        class="white-button !h-auto flex items-center space-x-1 w-full completed-form-send-copy-button"
-        :disabled="isSendingCopy"
-        @click.prevent="sendCopyToEmail"
-      >
-        <IconInnerShadowTop
-          v-if="isSendingCopy"
-          class="animate-spin"
-        />
-        <IconMail v-else />
-        <span>
-          {{ t('send_copy_via_email') }}
-        </span>
-      </button>
-      <button
-        v-if="!isWebView && withDownloadButton"
-        class="base-button flex items-center space-x-1 w-full completed-form-download-button"
-        :disabled="isDownloading"
-        @click.prevent="download"
-      >
-        <IconInnerShadowTop
-          v-if="isDownloading"
-          class="animate-spin"
-        />
-        <IconDownload v-else />
-        <span>
-          {{ t('download') }}
-        </span>
-      </button>
       <a
         v-if="isDemo"
         target="_blank"
